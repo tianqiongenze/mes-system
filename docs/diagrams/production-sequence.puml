@@ -1,0 +1,24 @@
+@startuml
+title Create & Start Production Order
+actor Client
+participant "ProductionController" as C
+participant "ProductionService" as S
+participant "Repository" as R
+database DB
+Client -> C : POST /orders (req)
+C -> S : createOrder(req)
+S -> R : save(order)
+R -> DB : insert
+S <-- R : order
+C <-- S : 201 + resp
+Client <-- C
+Client -> C : POST /{id}/start
+C -> S : startProduction(id)
+S -> R : findById(id)
+R -> DB : select
+S <-- R : order
+S -> S : setStatus(IN_PROGRESS)
+S -> R : save(order)
+C <-- S : 200 + resp
+Client <-- C
+@enduml

@@ -1,0 +1,76 @@
+server:
+  port: 8082
+spring:
+  application:
+    name: quality-service
+  datasource:
+    # Legacy single-URL (used by Flyway schema init on the WRITE node)
+    url: ${MES_DB_URL:jdbc:postgresql://10.167.2.175:26257/mes_system?sslmode=disable}
+    driver-class-name: org.postgresql.Driver
+    username: ${MES_DB_USER:root}
+    password: ${MES_DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: 20
+  # Read-write separation: two CRDB pools routed by transaction readOnly flag
+    write:
+      hikari:
+        jdbc-url: ${WRITE_DB_URL:jdbc:postgresql://10.167.2.175:26257/mes_system?sslmode=disable}
+        username: ${MES_DB_USER:root}
+        password: ${MES_DB_PASSWORD:}
+        driver-class-name: org.postgresql.Driver
+        maximum-pool-size: 20
+        minimum-idle: 5
+        pool-name: CRDB-Write-Pool
+    read:
+      hikari:
+        jdbc-url: ${READ_DB_URL:jdbc:postgresql://10.167.2.175:26267/mes_system?sslmode=disable}
+        username: ${MES_DB_USER:root}
+        password: ${MES_DB_PASSWORD:}
+        driver-class-name: org.postgresql.Driver
+        maximum-pool-size: 10
+        minimum-idle: 2
+        read-only: true
+        pool-name: CRDB-Read-Pool
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+    # Flyway must bypass the routing proxy (router not initialized during bean creation):
+    url: ${FLYWAY_URL:jdbc:postgresql://10.167.2.175:26257/mes_system?sslmode=disable}
+    user: ${MES_DB_USER:root}
+    password: ${MES_DB_PASSWORD:}
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  data:
+    redis:
+      host: ${REDIS_HOST:redis.dify-plus.svc.cluster.local}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:difyai123456}
+      database: 1
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+  h2:
+    console:
+      enabled: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,cache
+mes:
+  cache:
+    redis:
+      key-prefix: "mes:quality:"
+      ttl-seconds: 300
+    default-spec: "maximumSize=1000,expireAfterWrite=120s"
+    specs: "qualityInspections:maximumSize=2000,expireAfterWrite=300s;qualityMetrics:maximumSize=50,expireAfterWrite=60s"

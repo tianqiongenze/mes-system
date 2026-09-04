@@ -1,0 +1,27 @@
+@startuml mes-architecture
+!theme plain
+title MES System - TOGAF Application Architecture
+actor Client
+rectangle "Application Platform" {
+  rectangle "gateway-service :8080" as GW
+}
+rectangle "Business Process Services" {
+  rectangle "production-service\n:8081" as PS
+  rectangle "quality-service\n:8082" as QS
+  rectangle "equipment-service\n:8083" as ES
+  rectangle "inventory-service\n:8084" as IS
+}
+database "production_orders" as DB1
+database "inspection_records" as DB2
+database "equipment" as DB3
+database "materials" as DB4
+Client --> GW : /api/v1/{domain}/**
+GW --> PS
+GW --> QS
+GW --> ES
+GW --> IS
+PS --> DB1
+QS --> DB2
+ES --> DB3
+IS --> DB4
+@enduml
